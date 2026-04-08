@@ -8,10 +8,29 @@ def calculate_risk_level(score: int) -> str:
     else:
         return "Kritik Risk"
 
-def determine_threat_type(sub_scores: dict, findings: list) -> str:
+def determine_threat_type(sub_scores: dict, findings: list, total_score: int = 0) -> str:
     """
     Alt skorlar ve bulgulara bakarak baskın tehdit türünü belirle.
+    Düşük risk skorları için güvenli/normal site etiketleri kullan.
     """
+    # DÜŞÜK RİSK: 0-9 arası skorlar için güvenli/normal site
+    if total_score <= 9:
+        # SSL sorunu varsa bile düşük risk
+        findings_lower = " ".join(findings).lower()
+        if "ssl" in findings_lower or "sertifika" in findings_lower:
+            return "SSL Uyarısı (Düşük Risk)"
+        return "Normal Site"
+    
+    # ORTA RİSK: 10-24 arası için kontrol et
+    if total_score <= 24:
+        findings_lower = " ".join(findings).lower()
+        if any(kw in findings_lower for kw in ["şifre", "kart", "cvv", "iban"]):
+            return "Veri Toplama Formu (Orta Risk)"
+        if any(kw in findings_lower for kw in ["ssl", "sertifika", "http"]):
+            return "Güvenlik Uyarısı (Orta Risk)"
+        return "Şüpheli Özellikler"
+    
+    # YÜKSEK/KRİTİK RİSK için detaylı analiz
     findings_lower = " ".join(findings).lower()
     
     # Sosyal mühendislik baskın mı?
@@ -23,7 +42,7 @@ def determine_threat_type(sub_scores: dict, findings: list) -> str:
     form_score = sum(1 for kw in form_keywords if kw in findings_lower)
     
     # Domain taklidi baskın mı?
-    domain_keywords = ["taklit", "typo", "benzer", "marka"]
+    domain_keywords = ["taklit", "typo", "benzer", "marka", "fake", "sahte"]
     domain_score = sum(1 for kw in domain_keywords if kw in findings_lower)
     
     # Alt skorlara bak
@@ -43,7 +62,7 @@ def determine_threat_type(sub_scores: dict, findings: list) -> str:
     
     # Eğer hiçbiri belirgin değilse
     if max(scores.values()) == 0:
-        return "Genel Şüpheli Site"
+        return "Şüpheli Site"
     
     return dominant
 
@@ -96,6 +115,22 @@ def generate_recommendations(risk_level: str, threat_type: str, findings: list) 
     
     findings_lower = " ".join(findings).lower()
     
+    # Piranntech/Piran Tech taklitleri için özel öneriler
+    if "piran" in findings_lower and "tech" in findings_lower:
+        base_recs.append("🚨 BU SİTE DOLANDIRICIDIR - ALIŞVERİŞ YAPMAYIN!")
+        base_recs.append("💳 Kredi kartı bilgilerinizi kesinlikle girmeyin!")
+        base_recs.append("📵 Kargo Direktörü vaadiyle dolandırıcılık yapılıyor!")
+        base_recs.append("🔍 İnternette 'piranntech şikayet' araması yapın - yüzlerce şikayet var!")
+        base_recs.append("💰 Para tuzağı - Ürün gönderilmiyor!")
+        return base_recs  # Piran için diğer önerileri atla
+    
+    # UYAP/Adalet Bakanlığı taklitleri için özel öneriler
+    if "uyap" in findings_lower or "adalet" in findings_lower or "adliye" in findings_lower:
+        base_recs.append("🚨 BU SİTE GERÇEK UYAP/ADALET BAKANLIĞI DEĞİL!")
+        base_recs.append("Resmi UYAP sitesi: uyap.gov.tr veya uygulama üzerinden erişin.")
+        base_recs.append("Hiçbir evrak bilgisi, TC kimlik no veya dava bilgisi GİRMEYİN.")
+        base_recs.append("Gerçek UYAP'a ulaşmak için tarayıcıdan uyap.gov.tr yazın.")
+    
     if risk_level in ("Kritik Risk", "Yüksek Risk"):
         base_recs.append("Bu siteye kişisel bilgi GİRMEYİN.")
         base_recs.append("Sayfayı hemen kapatmanız önerilir.")
@@ -107,12 +142,16 @@ def generate_recommendations(risk_level: str, threat_type: str, findings: list) 
         base_recs.append("Banka kartı veya finansal bilgilerinizi paylaşmayın.")
         base_recs.append("Gerçek banka sitesine doğrudan tarayıcıdan gidin.")
     
-    if "taklit" in findings_lower or "marka" in findings_lower:
+    if "taklit" in findings_lower or "marka" in findings_lower or "fake" in findings_lower:
         base_recs.append("Bu site tanınan bir markayı taklit ediyor olabilir.")
         base_recs.append("Adres çubuğundaki URL'yi dikkatlice kontrol edin.")
     
     if "sosyal mühendislik" in threat_type.lower() or "acil" in findings_lower:
         base_recs.append("Aciliyet veya ödül vaadi içeren mesajlara şüpheyle yaklaşın.")
+    
+    if "hükümet" in findings_lower or "gov.tr" in findings_lower:
+        base_recs.append("Resmi devlet siteleri .gov.tr ile biter.")
+        base_recs.append("Şüpheliyseniz ilgili kurumu resmi telefonlarından arayın.")
     
     if risk_level == "Orta Risk":
         base_recs.append("Siteyi kullanmadan önce URL'yi dikkatlice kontrol edin.")

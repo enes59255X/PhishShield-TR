@@ -23,11 +23,10 @@
         </div>
       </div>
       <button class="btn-reanalyze" id="btnReanalyze" title="Yeniden Analiz Et">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
-          <path d="M21 3v5h-5"/>
-          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
-          <path d="M8 16H3v5"/>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 4v6h-6"/>
+          <path d="M1 20v-6h6"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
         </svg>
       </button>
     </header>
@@ -35,8 +34,8 @@
     <!-- URL Bar -->
     <div class="url-bar" id="urlBar">
       <svg class="url-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0 7.07-7.07l-1.72 1.71"/>
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0-7.07 7.07l1.71-1.71"/>
       </svg>
       <span id="currentUrl" class="url-text">Yükleniyor...</span>
     </div>
@@ -48,80 +47,63 @@
       <div class="state-loading" id="stateLoading">
         <div class="loader-ring">
           <div class="ring-segment"></div>
-          <div class="shield-center">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L3 7V12C3 16.55 7.08 20.74 12 22C16.92 20.74 21 16.55 21 12V7L12 2Z" stroke="currentColor" stroke-width="1.5" fill="currentColor" opacity="0.2"/>
-            </svg>
-          </div>
         </div>
-        <p class="loading-text" id="loadingText">Site analiz ediliyor...</p>
-        <p class="loading-sub">Bu işlem birkaç saniye sürebilir</p>
+        <div class="loading-text" id="loadingText">PhishShield TR analiz yapılıyor...</div>
       </div>
 
       <!-- Error State -->
-      <div class="state-error hidden" id="stateError">
-        <div class="error-icon">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="8" x2="12" y2="12"/>
-            <line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-        </div>
-        <p class="error-title" id="errorTitle">Servise Ulaşılamadı</p>
-        <p class="error-msg" id="errorMsg">Analiz servisine ulaşılamadı. Lütfen backend'in çalıştığını kontrol edin.</p>
-        <code class="error-cmd">cd backend && uvicorn app:app --host 127.0.0.1 --port 8002</code>
+      <div class="state-error" id="stateError">
+        <div class="error-icon">⚠️</div>
+        <div class="error-title">PhishShield TR Hatası</div>
+        <div class="error-message" id="errorMsg">Backend servisi kapalı</div>
+        <button class="btn-retry" id="btnRetry">Tekrar Dene</button>
       </div>
 
       <!-- Result State -->
-      <div class="state-result hidden" id="stateResult">
-
-        <!-- Score Circle -->
+      <div class="state-result" id="stateResult">
         <div class="score-section">
-          <div class="score-ring" id="scoreRing">
-            <svg class="score-svg" viewBox="0 0 120 120">
-              <circle class="score-track" cx="60" cy="60" r="50"/>
-              <circle class="score-fill" id="scoreFill" cx="60" cy="60" r="50"
-                stroke-dasharray="314"
-                stroke-dashoffset="314"/>
+          <div class="score-ring">
+            <svg class="score-svg" viewBox="0 0 100 100">
+              <circle class="score-track" cx="50" cy="50" r="45"/>
+              <circle class="score-fill" id="scoreFill" cx="50" cy="50" r="45" stroke-dasharray="283" stroke-dashoffset="283"/>
             </svg>
             <div class="score-inner">
-              <span class="score-number" id="scoreNumber">--</span>
-              <span class="score-label">/ 100</span>
+              <div class="score-number" id="scoreNumber">0</div>
+              <div class="score-label">RİSK</div>
             </div>
           </div>
           <div class="score-meta">
-            <div class="risk-badge" id="riskBadge">--</div>
-            <div class="threat-type" id="threatType">--</div>
+            <div class="risk-badge" id="riskBadge">Bekleniyor...</div>
+            <div class="threat-type" id="threatType">Analiz ediliyor...</div>
           </div>
         </div>
 
         <!-- Sub Scores -->
         <div class="sub-scores" id="subScores">
-          <div class="sub-score-title">Alt Analizler</div>
-          <div class="sub-score-grid" id="subScoreGrid">
-            <!-- filled by JS -->
-          </div>
+          <div class="sub-score-title">Detaylı Analiz Sonuçları</div>
+          <div class="sub-score-grid" id="subScoreGrid"></div>
         </div>
 
-        <!-- Findings -->
+        <!-- Analiz Detayları Listesi -->
         <div class="section findings-section" id="findingsSection">
           <div class="section-header">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 16v-4M12 8h.01"/>
             </svg>
             <span>Tespit Edilen Bulgular</span>
           </div>
           <ul class="findings-list" id="findingsList"></ul>
         </div>
 
-        <!-- Recommendations -->
+        <!-- Güvenlik Önerileri -->
         <div class="section recs-section" id="recsSection">
           <div class="section-header">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 11l3 3L22 4"/>
-              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="M12 8v4M12 16h.01"/>
             </svg>
-            <span>Önerilen Aksiyonlar</span>
+            <span>Güvenlik Önerileri</span>
           </div>
           <ul class="recs-list" id="recsList"></ul>
         </div>

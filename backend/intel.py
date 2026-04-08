@@ -13,13 +13,25 @@ SUSPICIOUS_TLDS = [
 
 # Known FAKE sites - MAXIMUM SCORE
 KNOWN_FAKE_SITES = [
+    # Piran Tech - Kargo Direktörü Dolandırıcılığı (Tam Domainler)
+    "piranntech.com", "www.piranntech.com",
+    "pirantech.com", "www.pirantech.com", 
+    "piran-tech.com", "www.piran-tech.com",
+    "pirantec.com", "www.pirantec.com",
+    "pirantleclh.com", "www.pirantleclh.com",
+    # Diğer fake siteler
     "cimeruzlasma", "cimerxyz", "cimernet", "cimergir", "cimerportal",
     "edevletgir", "edevletz", "edevletpro", "garantigiris", "garantioyna",
     "isbankgir", "isbanksifre", "akbankgir", "ziraatgir", "hambankgir", 
     "parayatir", "paparaoyna", "paparaoyun", "tinkoyun", "trendyolgift",
     "piranntech", "pirantech", "piran-tech", "pirantec", "piranntech",
     "teknopiran", "pirantechno", "piranservis", "piranshop", "piranstore",
-    "teknopirant", "pirankutu", "piranpazar", "piranmarket", "piranurun"
+    "teknopirant", "pirankutu", "piranpazar", "piranmarket", "piranurun",
+    # UYAP/Adalet Bakanlığı taklitleri
+    "uyap", "evraktakip", "evrak-takip", "adaletport", "adliyegir",
+    "uyapgiris", "uyap-giris", "uyapgir", "uyaplogin", "uyaport",
+    "adliyeevrak", "mahkemeevrak", "hukukevrak", "dava-takip", "davatakip",
+    "icra-takip", "icratakip", "adaletbak", "adalet-port", "adaletgir"
 ]
 
 # REAL SAFE government domains - EXCEPTIONS
@@ -50,7 +62,12 @@ GOVERNMENT_IMPERSONATION = [
     "cimer", "e-devlet", "edevlet", "gib", "gelir", "vergidairesi",
     "sgk", "turkiye", "türkiye", "adliye", "mahkeme",
     "polis", "jandarma", "askeri", "savci", "cumhuriyet",
-    "basbakanlik", "tcmb", "ch", "cati"
+    "basbakanlik", "tcmb", "ch", "cati",
+    # UYAP ve Adalet Bakanlığı ile ilgili
+    "uyap", "evraktakip", "evrak-takip", "adalet", "adliyedevlet", "adalet-bakanligi",
+    "uyapbilisim", "uyapportal", "davatakip", "dava-takip", "icratakip", "icra-takip",
+    "hukuk", "avukat", "adliyegirisi", "mahkemeportal", "sulhhukuk", "cezaevrak",
+    "adaletport", "adliyeevrak", "hukukevrak", "icraevrak"
 ]
 
 TRUSTED_BRANDS = [
@@ -142,6 +159,19 @@ def analyze_domain_intel(url: str, domain: str) -> dict:
     url_lower = url.lower()
     domain_lower = domain.lower()
     
+    # EN YÜKSEK ÖNCELİK: piranntech.com ve varyasyonları - KRİTİK PHISHING
+    if "piran" in domain_lower:
+        tech_variations = ["tech", "tek", "teq", "tekn", "technology", "teknoloji", "tnk", "leclh"]
+        if any(var in domain_lower for var in tech_variations):
+            results["score"] = 98
+            results["findings"] = [
+                "🚨 KRİTİK! Bilinen FAKE/PİRAN TECH dolandırıcı sitesi!",
+                "⚠️ Sahte vakum makinesi satış sitesi - KARGO DİREKTÖRÜ DOLANDIRICILIĞI!",
+                "💰 Para tuzağı - Ürün göndermiyorlar!",
+                "📵 Şikayet var: İnternette 'piranntech dolandırıcı' araması yapın"
+            ]
+            return results
+    
     # 1. CHECK OFFICIAL DOMAINS FIRST - PRIORITY 1
     is_official = False
     for official in KNOWN_OFFICIAL_DOMAINS:
@@ -200,6 +230,17 @@ def analyze_domain_intel(url: str, domain: str) -> dict:
         (r'.*urun.*tech', "Ürün teknoloji taklidi"),
         (r'.*kutu.*tech', "Kutu teknoloji taklidi"),
         (r'.*servis.*tech', "Servis teknoloji taklidi"),
+        # UYAP/Adalet Bakanlığı taklidi
+        (r'uyap.*', "UYAP taklidi"),
+        (r'.*uyap.*', "UYAP taklidi"),
+        (r'evrak.*takip.*', "Evrak takip taklidi"),
+        (r'.*adliye.*', "Adliye taklidi"),
+        (r'.*adalet.*bakan.*', "Adalet Bakanlığı taklidi"),
+        (r'.*adalet.*port.*', "Adalet Portal taklidi"),
+        (r'.*dava.*takip.*', "Dava takip taklidi"),
+        (r'.*icra.*takip.*', "İcra takip taklidi"),
+        (r'.*mahkeme.*', "Mahkeme taklidi"),
+        (r'.*sulh.*', "Sulh hukuk taklidi"),
     ]
     
     for pattern, msg in fake_patterns:
@@ -209,10 +250,29 @@ def analyze_domain_intel(url: str, domain: str) -> dict:
             break
     
     # 4. Government impersonation check (fake government sites)
+    gov_impersonation_found = False
     for kw in GOVERNMENT_IMPERSONATION:
         if kw in url_lower:
             results["score"] += 60
             results["findings"].append(f"🚨 TEHLİKELİ! Hükümet taklidi: {kw}")
+            gov_impersonation_found = True
+    
+    # Özel UYAP/Adalet Bakanlığı taklidi kontrolü
+    if "uyap" in url_lower or "evraktakip" in url_lower or "evrak-takip" in url_lower:
+        if not is_safe_gov:  # Güvenli gov.tr domaini değilse
+            results["score"] += 75
+            results["findings"].append("🚨 KRİTİK! UYAP (Adalet Bakanlığı) taklidi tespit edildi!")
+            results["findings"].append("⚠ Bu site gerçek UYAP değil - DOLANDIRICILIK riski!")
+    
+    if "adalet" in url_lower and ("bakan" in url_lower or "port" in url_lower or "giris" in url_lower):
+        if not is_safe_gov and not domain_lower.endswith(".gov.tr"):
+            results["score"] += 70
+            results["findings"].append("🚨 KRİTİK! Adalet Bakanlığı taklidi tespit edildi!")
+            
+    if "adliye" in url_lower or "mahkeme" in url_lower:
+        if not is_safe_gov and not domain_lower.endswith(".gov.tr"):
+            results["score"] += 65
+            results["findings"].append("🚨 TEHLİKELİ! Adliye/Mahkeme taklidi!")
     
     # 4. Suspicious TLD
     is_sus_tld, tld_msg = check_suspicious_tld(domain)

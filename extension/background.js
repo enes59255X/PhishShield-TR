@@ -1,13 +1,16 @@
+// PhishShield TR - Background Script
+// Tab değişikliklerini dinler ve analiz tetikler
+
 const API_BASE = "http://127.0.0.1:8002";
 let scannedUrls = new Set();
 let highRiskAlerts = new Set();
 
-// Listen for tab updates
+// Tab güncellemelerini dinle
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url && tab.url.startsWith('http')) {
     const url = new URL(tab.url).href;
     
-    // Simple deduplication for current session
+    // Oturum için basit deduplikasyon
     if (scannedUrls.has(url)) return;
     scannedUrls.add(url);
 
@@ -15,7 +18,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   }
 });
 
-// Listen for messages from content script
+// Content script'ten mesajları dinle
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'highRiskAlert') {
     handleHighRiskAlert(message, sender.tab.id);
@@ -24,55 +27,52 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-// Handle high-risk alerts
+// Yüksek risk uyarılarını yönet
 function handleHighRiskAlert(message, tabId) {
   const alertKey = `${message.url}_${message.score}`;
   
-  // Prevent duplicate alerts
+  // Yinelenen uyarıları önle
   if (highRiskAlerts.has(alertKey)) return;
   highRiskAlerts.add(alertKey);
   
-  // Show system notification
+  // Sistem bildirimi göster
   chrome.notifications.create({
     type: 'basic',
     iconUrl: 'icons/icon128.png',
-    title: '🚨 YÜKSEK RİKLİ SİNE TESPİT EDİLDİ!',
+    title: ' YÜKSEK RİSK TESPİT EDİLDİ!',
     message: `${message.riskLevel}: ${message.url.substring(0, 50)}...\nSkor: ${message.score}/100`,
     priority: 2,
     requireInteraction: true
   });
   
-  // Log the alert
+  // Log kaydet
   console.log('PhishShield High Risk Alert:', {
     url: message.url,
     score: message.score,
     riskLevel: message.riskLevel,
-    reasons: message.reasons,
-    timestamp: new Date().toISOString()
+    reasons: message.reasons
   });
 }
 
-// Handle site reports
+// Site bildirimini yönet
 function handleSiteReport(message) {
-  // Store report for future analysis
-  const report = {
+  console.log('PhishShield Site Report:', {
     url: message.url,
     score: message.score,
-    riskLevel: message.riskLevel,
-    timestamp: new Date().toISOString()
-  };
-  
-  // Get existing reports
-  chrome.storage.local.get(['siteReports'], (result) => {
-    const reports = result.siteReports || [];
-    reports.push(report);
-    
-    // Keep only last 100 reports
-    if (reports.length > 100) {
-      reports.splice(0, reports.length - 100);
+    riskLevel: message.riskLevel
+  });
+}
+
+// Otomatik analiz fonksiyonu
+function autoAnalyze(url, tabId) {
+  // Content script'e analiz isteği gönder
+  chrome.tabs.sendMessage(tabId, {
+    action: 'analyzeSite',
+    url: url
+  }, (response) => {
+    if (chrome.runtime.lastError) {
+      console.log('PhishShield Background analysis error:', chrome.runtime.lastError);
     }
-    
-    chrome.storage.local.set({ siteReports: reports });
   });
   
   // Show confirmation

@@ -280,15 +280,15 @@ class PhishShieldHandler(BaseHTTPRequestHandler):
         return any(indicator in url_lower for indicator in phishing_indicators)
     
     def log_message(self, format, *args):
-        """Log mesajlarý"""
+        """Log mesajları"""
         print(f"[{datetime.now().strftime('%H:%M:%S')}] {format % args}")
 
 def run_server():
-    """Sunucuyu baþlat"""
+    """Sunucuyu başlat"""
     server_address = ('127.0.0.1', 8002)
     httpd = HTTPServer(server_address, PhishShieldHandler)
     
-    print("PhishShield TR Basit Sunucu Baslatiliyor...")
+    print("PhishShield TR Basit Sunucu Başlatılıyor...")
     print(f"Server: http://127.0.0.1:8002")
     print("Dashboard: http://127.0.0.1:8002")
     print("Health: http://127.0.0.1:8002/health")

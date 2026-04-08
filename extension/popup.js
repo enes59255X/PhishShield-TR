@@ -1,4 +1,4 @@
-let API_BASE = "http://127.0.0.1:8002";
+let API_BASE = "http://127.0.0.1:8004";
 console.log("PhishShield Popup Loaded");
 
 const stateLoading = document.getElementById("stateLoading");
@@ -47,6 +47,8 @@ function getBarColor(score) {
 }
 
 function animateScore(score) {
+  console.log("Animating score:", score); // Debug log
+  
   const circumference = 314;
   const offset = circumference - (score / 100) * circumference;
   const color = getBarColor(score);
@@ -67,42 +69,92 @@ function animateScore(score) {
 }
 
 function renderSubScores(subScores) {
-  if (!subScores) return;
+  console.log("renderSubScores called with:", subScores);
+  
+  if (!subScores) {
+    console.log("subScores is empty or null");
+    subScoreGrid.innerHTML = '<div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 20px;">Analiz verisi alınamadı</div>';
+    return;
+  }
+  
   const labels = {
-    "ml_prediction": "AI (Machine Learning)",
-    "rule_base": "Kural Tabanlı Analiz",
-    "intel": "Tehdit İstihbaratı"
+    "ml_prediction": "AI Tahmini",
+    "rule_base": "Kural Tabanlı",
+    "intel": "Tehdit İstihbaratı",
+    "url_domain_analizi": "URL/Domain",
+    "form_analizi": "Form Analizi",
+    "icerik_analizi": "İçerik",
+    "davranis_analizi": "Davranış",
+    "js_obfuscation": "JS Şifreleme",
+    "external_scripts": "Harici Scriptler",
+    "ssl_cert": "SSL Sertifika",
+    "screenshot_logo": "Ekran Görüntüsü"
   };
 
   subScoreGrid.innerHTML = "";
+  let hasValidScores = false;
+  
   Object.entries(subScores).forEach(([key, val]) => {
-    const label = labels[key] || key;
-    const color = getBarColor(val);
-    const item = document.createElement("div");
-    item.className = "sub-score-item";
-    item.innerHTML = `
-      <div class="sub-score-name">${label}</div>
-      <div class="sub-score-bar-wrap">
-        <div class="sub-score-bar" style="width: ${val}%; background: ${color}"></div>
-      </div>
-      <div class="sub-score-val">${val}/100</div>
-    `;
-    subScoreGrid.appendChild(item);
+    // Sadece değeri > 0 olan ve sayısal olanları göster
+    if (typeof val === 'number' && val > 0) {
+      hasValidScores = true;
+      const label = labels[key] || key;
+      const color = getBarColor(val);
+      const item = document.createElement("div");
+      item.className = "sub-score-item";
+      item.innerHTML = `
+        <div class="sub-score-name">${label}</div>
+        <div class="sub-score-bar-wrap">
+          <div class="sub-score-bar" style="width: ${val}%; background: ${color}"></div>
+        </div>
+        <div class="sub-score-val">${val}/100</div>
+      `;
+      subScoreGrid.appendChild(item);
+    }
   });
+  
+  // Hiçbir değer yoksa mesaj göster
+  if (!hasValidScores) {
+    subScoreGrid.innerHTML = '<div style="color: var(--text-muted); font-size: 11px; text-align: center; padding: 12px; grid-column: 1 / -1;">Risk tespit edilmedi</div>';
+  }
 }
 
 function renderFindings(reasons) {
   findingsList.innerHTML = "";
-  (reasons || ["Şüpheli özellik bulunamadı."]).forEach(reason => {
+  if (!reasons || reasons.length === 0) {
+    findingsList.innerHTML = '<li style="color: var(--text-muted);">Belirgin bir bulgu tespit edilmedi</li>';
+    return;
+  }
+  
+  reasons.forEach(reason => {
     const li = document.createElement("li");
+    // Emoji ve özel karakterleri koru
     li.textContent = reason;
+    
+    // Risk seviyesine göre stil uygula
+    if (reason.includes("🚨") || reason.includes("KRİTİK") || reason.includes("TEHLİKELİ")) {
+      li.style.borderLeft = "3px solid var(--risk-critical)";
+      li.style.background = "var(--risk-critical-bg)";
+    } else if (reason.includes("⚠")) {
+      li.style.borderLeft = "3px solid var(--risk-high)";
+      li.style.background = "var(--risk-high-bg)";
+    } else if (reason.includes("✓") || reason.includes("✅") || reason.includes("GÜVENLİ")) {
+      li.style.borderLeft = "3px solid var(--risk-low)";
+      li.style.background = "var(--risk-low-bg)";
+    }
+    
     findingsList.appendChild(li);
   });
 }
 
 function renderRecommendations(recs) {
   recsList.innerHTML = "";
-  (recs || []).forEach(rec => {
+  if (!recs || recs.length === 0) {
+    recsList.innerHTML = '<li style="color: var(--text-muted);">Özel bir öneri bulunmuyor</li>';
+    return;
+  }
+  
+  recs.forEach(rec => {
     const li = document.createElement("li");
     li.textContent = rec;
     recsList.appendChild(li);
@@ -117,7 +169,7 @@ async function analyzeUrl(url) {
     
     if (!health || !health.ok) {
         // Try fallback to localhost if 127.0.0.1 failed
-        const fallback = API_BASE.includes("127.0.0.1") ? "http://localhost:8002" : "http://127.0.0.1:8002";
+        const fallback = API_BASE.includes("127.0.0.1") ? "http://localhost:8004" : "http://127.0.0.1:8004";
         console.log("Trying fallback:", fallback);
         health = await fetch(`${fallback}/health`).catch(() => null);
         if (health && health.ok) {
@@ -142,10 +194,29 @@ async function analyzeUrl(url) {
     const data = await res.json();
     
     showState(stateResult);
-    animateScore(data.score);
-    riskBadge.textContent = data.risk_level;
-    riskBadge.className = `risk-badge risk-${getRiskClass(data.score)}`;
-    threatType.textContent = data.threat_type;
+    animateScore(data.score || 0);
+    
+    // Risk badge güncelle
+    const riskLevel = data.risk_level || (data.score >= 80 ? "KRİTİK RİSK" : data.score >= 50 ? "YÜKSEK RİSK" : data.score >= 20 ? "ORTA RİSK" : "DÜŞÜK RİSK");
+    riskBadge.textContent = riskLevel;
+    riskBadge.className = `risk-badge risk-${getRiskClass(data.score || 0)}`;
+    
+    // Tehdit tipi - skora göre özelleştir
+    let threatDisplay = data.threat_type;
+    if (!threatDisplay) {
+        if (data.score === 0) threatDisplay = "✓ Güvenli Site";
+        else if (data.score <= 9) threatDisplay = "✓ Normal Site";
+        else if (data.score <= 24) threatDisplay = "⚠ Dikkat Edilmesi Gereken Site";
+        else threatDisplay = "⚠ Şüpheli Site";
+    }
+    // Eğer threat_type "Normal Site" veya "SSL Uyarısı" içeriyorsa güvenli göster
+    if (threatDisplay.includes("Normal") || threatDisplay.includes("Güvenli") || threatDisplay.includes("SSL")) {
+        threatType.style.color = "var(--risk-low)";
+    } else if (data.score <= 9) {
+        threatType.style.color = "var(--text-secondary)";
+    }
+    threatType.textContent = threatDisplay;
+    
     renderSubScores(data.sub_scores);
     renderFindings(data.reasons);
     renderRecommendations(data.recommendations);
@@ -176,6 +247,11 @@ async function init() {
 }
 
 btnReanalyze.addEventListener("click", () => {
-    if(currentUrl && currentUrl.startsWith("http")) analyzeUrl(currentUrl);
+    if(currentUrl && currentUrl.startsWith("http")) {
+        btnReanalyze.classList.add("spinning");
+        analyzeUrl(currentUrl).then(() => {
+            setTimeout(() => btnReanalyze.classList.remove("spinning"), 500);
+        });
+    }
 });
 document.addEventListener("DOMContentLoaded", init);

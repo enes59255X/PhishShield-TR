@@ -80,6 +80,23 @@ class DatabaseManager:
             )
             """,
             """
+            CREATE TABLE IF NOT EXISTS user_feedback (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                url TEXT NOT NULL,
+                domain TEXT NOT NULL,
+                feedback_type TEXT NOT NULL, -- 'false_positive', 'false_negative', 'general'
+                is_official_site BOOLEAN DEFAULT 0,
+                user_id TEXT, -- browser fingerprint veya session id
+                user_comment TEXT,
+                screenshot_path TEXT,
+                submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                reviewed BOOLEAN DEFAULT 0,
+                review_result TEXT,
+                reviewed_at TIMESTAMP,
+                UNIQUE(url, user_id) -- Her kullanıcı bir URL için 1 kez
+            )
+            """,
+            """
             CREATE TABLE IF NOT EXISTS system_stats (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 date DATE UNIQUE NOT NULL,
@@ -250,14 +267,14 @@ class DatabaseManager:
             """, (domain, category, description))
             await conn.commit()
     
-    async def add_phishing_domain(self, domain: str, threat_level: int = 5, source: str = "manual"):
+    async def add_phishing_domain(self, domain: str, threat_level: int = 1, source: str = "manual", notes: str = ""):
         """Phishing domain ekle"""
         async with aiosqlite.connect(self.db_path) as conn:
             await conn.execute("""
                 INSERT OR REPLACE INTO phishing_domains 
-                (domain, threat_level, source, last_seen)
-                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-            """, (domain, threat_level, source))
+                (domain, threat_level, source, last_seen, notes)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)
+            """, (domain, threat_level, source, notes))
             await conn.commit()
     
     async def update_daily_stats(self):
@@ -286,6 +303,78 @@ class DatabaseManager:
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 """, (today, row[0], row[1], row[2], row[3], row[4], accuracy))
                 await conn.commit()
+    
+    async def add_user_feedback(self, url: str, domain: str, feedback_type: str, user_id: str, 
+                                 is_official_site: bool = False, user_comment: str = "", 
+                                 screenshot_path: str = "") -> bool:
+        """Kullanıcı geri bildirimi ekle - her kullanıcı bir URL için 1 kez"""
+        try:
+            async with aiosqlite.connect(self.db_path) as conn:
+                await conn.execute("""
+                    INSERT OR REPLACE INTO user_feedback 
+                    (url, domain, feedback_type, user_id, is_official_site, user_comment, screenshot_path, submitted_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                """, (url, domain, feedback_type, user_id, is_official_site, user_comment, screenshot_path))
+                await conn.commit()
+                return True
+        except Exception as e:
+            print(f"Feedback ekleme hatası: {e}")
+            return False
+    
+    async def check_user_feedback_exists(self, url: str, user_id: str) -> bool:
+        """Kullanıcı bu URL için daha önce feedback vermiş mi?"""
+        try:
+            async with aiosqlite.connect(self.db_path) as conn:
+                cursor = await conn.execute("""
+                    SELECT COUNT(*) FROM user_feedback 
+                    WHERE url = ? AND user_id = ?
+                """, (url, user_id))
+                row = await cursor.fetchone()
+                return row[0] > 0
+        except:
+            return False
+    
+    async def get_user_feedback_stats(self, user_id: str = None) -> Dict:
+        """Kullanıcı geri bildirim istatistikleri"""
+        try:
+            async with aiosqlite.connect(self.db_path) as conn:
+                if user_id:
+                    cursor = await conn.execute("""
+                        SELECT COUNT(*) FROM user_feedback WHERE user_id = ?
+                    """, (user_id,))
+                else:
+                    cursor = await conn.execute("""
+                        SELECT COUNT(*) FROM user_feedback
+                    """)
+                row = await cursor.fetchone()
+                return {"total_feedback": row[0]}
+        except:
+            return {"total_feedback": 0}
+    
+    async def get_pending_feedback_reviews(self) -> List[Dict]:
+        """İncelenmemiş geri bildirimleri getir"""
+        try:
+            async with aiosqlite.connect(self.db_path) as conn:
+                cursor = await conn.execute("""
+                    SELECT url, domain, feedback_type, is_official_site, user_comment, submitted_at
+                    FROM user_feedback 
+                    WHERE reviewed = 0
+                    ORDER BY submitted_at DESC
+                """)
+                rows = await cursor.fetchall()
+                return [
+                    {
+                        'url': row[0],
+                        'domain': row[1],
+                        'feedback_type': row[2],
+                        'is_official_site': row[3],
+                        'user_comment': row[4],
+                        'submitted_at': row[5]
+                    }
+                    for row in rows
+                ]
+        except:
+            return []
 
 # Singleton instance
 db_manager = DatabaseManager()

@@ -1,7 +1,7 @@
 // PhishShield TR - Content Script (Otomatik Gerçek Zamanlı Koruma)
 // Sayfa yüklendiğinde otomatik analiz yapar
 
-const API_BASE = "http://127.0.0.1:8002";
+const API_BASE = "http://127.0.0.1:8004";
 const RISK_THRESHOLD = 40;
 const HIGH_RISK_THRESHOLD = 60;
 const CRITICAL_RISK_THRESHOLD = 80;
@@ -234,6 +234,24 @@ async function analyzeCurrentSite() {
     return;
   }
   
+  // ÖNCE OFFLINE ANALİZ YAP - HIZLI KONTROL
+  const urlLower = url.toLowerCase();
+  
+  // Resmi devlet siteleri kontrolü
+  if (urlLower.includes('.gov.tr')) {
+    console.log("PhishShield TR: Resmi devlet sitesi tespit edildi - GÜVENLİ");
+    showWarning(0, "GÜVENLİ", ["Resmi devlet sitesi - Güvenilir kaynak"]);
+    return;
+  }
+  
+  // Phishing siteleri kontrolü
+  if (urlLower.includes('.click') || urlLower.includes('.xyz') || urlLower.includes('.top')) {
+    console.log("PhishShield TR: Phishing sitesi tespit edildi - KRİTİK RİSK");
+    showWarning(85, "KRİTİK RİSK", ["Şüpheli domain - Phishing tehlikesi"]);
+    return;
+  }
+  
+  // Backend'e bağlanma - sadece diğer siteler için
   try {
     console.log(`PhishShield TR: Connecting to ${API_BASE}/analyze`);
     
@@ -289,87 +307,28 @@ async function analyzeCurrentSite() {
   }
 }
 
-// Offline analiz yap
+// Offline analiz yap - TÜM SİTELER İÇİN
 function performOfflineAnalysis(url) {
-  console.log("PhishShield TR: Performing offline analysis for", url);
-  
-  // Basit phishing tespiti
-  const phishingIndicators = [
-    'tebleherseyhazir.click',
-    'toblahorseyhazir.click',
-    'cepteteb-login.click',
-    'eba-giris.click',
-    'e-devlet-login.click',
-    '.click',
-    '.xyz',
-    '.top',
-    'login',
-    'giris',
-    'secure',
-    'verification'
-  ];
-  
-  const safeIndicators = [
-    'turkiye.gov.tr',
-    'e-devlet.gov.tr',
-    'edevlet.gov.tr',
-    'usom.gov.tr',
-    'cimer.gov.tr',
-    'gib.gov.tr',
-    'sgk.gov.tr',
-    'tcmb.gov.tr',
-    'btk.gov.tr',
-    'meb.gov.tr',
-    'milliegitim.gov.tr',
-    'yok.gov.tr',
-    'osym.gov.tr',
-    'nvi.gov.tr',
-    'eba.gov.tr',
-    'ogmm.gov.tr',
-    '.gov.tr'
-  ];
+  console.log("PhishShield TR: Offline analysis starting for", url);
   
   const urlLower = url.toLowerCase();
-  let score = 20; // Default güvenli skor
-  let riskLevel = "DUSUK RISK";
-  let isPhishing = false;
   
-  // Safe kontrolü
-  for (const safe of safeIndicators) {
-    if (urlLower.includes(safe)) {
-      score = 0;
-      riskLevel = "GUVENLI";
-      isPhishing = false;
-      break;
-    }
+  // Resmi devlet siteleri kontrolü
+  if (urlLower.includes('.gov.tr')) {
+    console.log("PhishShield TR: Resmi devlet sitesi tespit edildi - GÜVENLİ");
+    showWarning(0, "GÜVENLİ", ["Resmi devlet sitesi - Güvenilir kaynak"]);
+    return;
   }
   
-  // Phishing kontrolü
-  if (score > 0) {
-    for (const indicator of phishingIndicators) {
-      if (urlLower.includes(indicator)) {
-        score = 85;
-        riskLevel = "KRITIK RISK";
-        isPhishing = true;
-        break;
-      }
-    }
+  // Phishing siteleri kontrolü
+  if (urlLower.includes('.click') || urlLower.includes('.xyz') || urlLower.includes('.top')) {
+    console.log("PhishShield TR: Phishing sitesi tespit edildi - KRİTİK RİSK");
+    showWarning(85, "KRİTİK RİSK", ["Şüpheli domain - Phishing tehlikesi"]);
+    return;
   }
   
-  console.log("PhishShield TR: Offline analysis result", {
-    url: url,
-    score: score,
-    riskLevel: riskLevel,
-    isPhishing: isPhishing
-  });
-  
-  // Uyarý göster
-  if (score >= RISK_THRESHOLD) {
-    if (score >= HIGH_RISK_THRESHOLD) {
-      showBottomRightNotification(score, riskLevel, ["Offline analizi"]);
-    }
-    showWarning(score, riskLevel, ["Offline analizi"]);
-  }
+  // Diğer durumlar - güvenli kabul et
+  console.log("PhishShield TR: Site güvenli görünüyor");
 }
 
 // Sayfa yüklendiğinde analiz et - DAHA HIZLI
