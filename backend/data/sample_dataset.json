@@ -1,0 +1,55 @@
+{
+  "demo_scenarios": [
+    {
+      "url": "http://garanti-bankasi-giris.xyz/login",
+      "expected_risk": "Kritik Risk",
+      "expected_threat": "Kimlik Avı (Phishing)",
+      "description": "Sahte Garanti Bankası giriş sayfası"
+    },
+    {
+      "url": "http://edevlet-dogrulama.tk/kimlik",
+      "expected_risk": "Kritik Risk",
+      "expected_threat": "Sahte Giriş Sayfası",
+      "description": "Sahte e-devlet doğrulama sayfası"
+    },
+    {
+      "url": "http://192.168.1.1/admin/login",
+      "expected_risk": "Analiz Edilemedi",
+      "expected_threat": "Özel IP",
+      "description": "Özel IP adresi"
+    },
+    {
+      "url": "https://www.google.com",
+      "expected_risk": "Düşük Risk",
+      "expected_threat": "Güvenli",
+      "description": "Normal güvenilir site"
+    },
+    {
+      "url": "http://paypall-secure-account-verify.click/update",
+      "expected_risk": "Kritik Risk",
+      "expected_threat": "Kimlik Avı (Phishing)",
+      "description": "Sahte PayPal güvenlik sayfası"
+    }
+  ],
+  "mock_responses": {
+    "http://garanti-bankasi-giris.xyz/login": {
+      "score": 88,
+      "risk_level": "Kritik Risk",
+      "threat_type": "Kimlik Avı (Phishing)",
+      "reasons": [
+        "'garanti' markasını taklit edebilir",
+        "Şüpheli TLD tespit edildi: .xyz",
+        "Şüpheli URL anahtar kelimeleri: giris, banka",
+        "Şifre giriş alanı tespit edildi",
+        "Hassas form alanları tespit edildi: password, card"
+      ],
+      "recommendations": [
+        "Bu siteye kişisel bilgi GİRMEYİN.",
+        "Sayfayı hemen kapatmanız önerilir.",
+        "Banka kartı veya finansal bilgilerinizi paylaşmayın.",
+        "Gerçek banka sitesine doğrudan tarayıcıdan gidin.",
+        "Adres çubuğundaki URL'yi dikkatlice kontrol edin."
+      ]
+    }
+  }
+}

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhishShield TR Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+        body { font-family: 'Outfit', sans-serif; background: #0f172a; color: #f8fafc; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
+        .glow-red { box-shadow: 0 0 15px rgba(239, 68, 68, 0.2); }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-12">
+            <div>
+                <h1 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
+                    PhishShield TR
+                </h1>
+                <p class="text-slate-400 mt-2">Autonomous Threat Intel & Analysis Dashboard</p>
+            </div>
+            <div class="flex gap-4">
+                <div class="glass px-4 py-2 rounded-xl flex items-center gap-2">
+                    <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                    <span class="text-sm font-medium">Sistem Aktif</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+            <div class="glass p-6 rounded-2xl">
+                <div class="text-slate-400 text-sm mb-1">Toplam Analiz</div>
+                <div class="text-3xl font-bold">{{ total_scans }}</div>
+            </div>
+            <div class="glass p-6 rounded-2xl border-l-4 border-red-500">
+                <div class="text-slate-400 text-sm mb-1">Tespit Edilen Phishing</div>
+                <div class="text-3xl font-bold text-red-400">{{ phishing_detected }}</div>
+            </div>
+            <div class="glass p-6 rounded-2xl">
+                <div class="text-slate-400 text-sm mb-1">Model Accuracy</div>
+                <div class="text-3xl font-bold text-emerald-400">94.2%</div>
+            </div>
+            <div class="glass p-6 rounded-2xl">
+                <div class="text-slate-400 text-sm mb-1">Threat Intel (Feed)</div>
+                <div class="text-3xl font-bold text-blue-400">{{ intel_count }}</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Recent Analyses -->
+            <div class="glass p-6 rounded-2xl">
+                <h2 class="text-xl font-bold mb-6">Son Analizler</h2>
+                <div class="space-y-4">
+                    {% for analysis in recent_analyses %}
+                    <div class="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-white/5">
+                        <div class="truncate mr-4">
+                            <div class="font-medium truncate">{{ analysis.url }}</div>
+                            <div class="text-xs text-slate-500">{{ analysis.created_at }}</div>
+                        </div>
+                        <div class="px-3 py-1 rounded-lg text-xs font-bold 
+                            {% if analysis.score > 70 %} bg-red-500/20 text-red-400 
+                            {% else %} bg-emerald-500/20 text-emerald-400 {% endif %}">
+                            {{ analysis.score }} / 100
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Security Alerts -->
+            <div class="glass p-6 rounded-2xl glow-red">
+                <h2 class="text-xl font-bold mb-6 text-red-400 flex items-center gap-2">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    Güvenlik Uyarıları
+                </h2>
+                <div class="space-y-4">
+                    {% if not security_logs %}
+                    <div class="text-center py-8 text-slate-500 italic">Şu an için tehdit tespit edilmedi.</div>
+                    {% endif %}
+                    {% for log in security_logs %}
+                    <div class="p-4 bg-red-900/10 border border-red-500/20 rounded-xl">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="font-bold text-red-400 text-sm">{{ log.action }}</span>
+                            <span class="text-[10px] text-slate-500 uppercase tracking-widest">{{ log.created_at }}</span>
+                        </div>
+                        <p class="text-xs text-slate-300">{{ log.details }}</p>
+                        <div class="mt-2 text-[10px] text-slate-500">IP: {{ log.ip }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
