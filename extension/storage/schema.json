@@ -1,0 +1,33 @@
+{
+  "type": "object",
+  "properties": {
+    "protectionEnabled": {
+      "type": "boolean",
+      "description": "Phishing korumasi aktif/pasif"
+    },
+    "formProtection": {
+      "type": "boolean",
+      "description": "Form korumasi aktif/pasif"
+    },
+    "autoScan": {
+      "type": "boolean",
+      "description": "Otomatik tarama aktif/pasif"
+    },
+    "advancedMode": {
+      "type": "boolean",
+      "description": "Gelişmiş mod aktif/pasif"
+    },
+    "notificationsEnabled": {
+      "type": "boolean",
+      "description": "Bildirimler aktif/pasif"
+    },
+    "cacheTTL": {
+      "type": "integer",
+      "description": "Onbellek suresi (milisaniye)"
+    },
+    "apiUrl": {
+      "type": "string",
+      "description": "API sunucu adresi"
+    }
+  }
+}

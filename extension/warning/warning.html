@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⚠️ PhishShield TR - Tehlikeli Site Tespit Edildi</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a0a0a 0%, #2d0f0f 50%, #1a0505 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      animation: bodyFadeIn 0.5s ease-out;
+    }
+
+    @keyframes bodyFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .warning-container {
+      text-align: center;
+      padding: 40px;
+      max-width: 500px;
+      animation: slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(50px) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .shield-icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(244, 67, 54, 0.6)); }
+      50% { transform: scale(1.1); filter: drop-shadow(0 0 40px rgba(244, 67, 54, 0.9)); }
+    }
+
+    h1 {
+      color: #F44336;
+      font-size: 28px;
+      margin-bottom: 15px;
+      text-shadow: 0 0 20px rgba(244, 67, 54, 0.5);
+    }
+
+    .danger-badge {
+      background: linear-gradient(135deg, #F44336, #d32f2f);
+      color: white;
+      padding: 8px 24px;
+      border-radius: 50px;
+      font-size: 14px;
+      font-weight: 600;
+      display: inline-block;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 15px rgba(244, 67, 54, 0.4);
+    }
+
+    .domain-box {
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(244, 67, 54, 0.5);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .domain-label {
+      color: #888;
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .domain-name {
+      color: #fff;
+      font-size: 20px;
+      font-weight: 600;
+      word-break: break-all;
+    }
+
+    .reasons {
+      background: rgba(255, 152, 0, 0.15);
+      border: 1px solid rgba(255, 152, 0, 0.3);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: left;
+    }
+
+    .reasons h3 {
+      color: #FF9800;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .reasons ul {
+      list-style: none;
+    }
+
+    .reasons li {
+      color: #ffd54f;
+      font-size: 14px;
+      padding: 6px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .reasons li::before {
+      content: "⚠️";
+    }
+
+    .actions {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 30px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 14px 32px;
+      border-radius: 50px;
+      border: none;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #F44336, #d32f2f);
+      color: white;
+      box-shadow: 0 4px 20px rgba(244, 67, 54, 0.4);
+    }
+
+    .btn-danger:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 30px rgba(244, 67, 54, 0.6);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.05);
+    }
+
+    .countdown {
+      color: #888;
+      font-size: 14px;
+      margin-top: 20px;
+    }
+
+    .countdown span {
+      color: #F44336;
+      font-weight: 600;
+    }
+
+    /* Animasyonlu çıkış */
+    .fade-out {
+      animation: fadeOut 0.5s ease-out forwards;
+    }
+
+    @keyframes fadeOut {
+      to {
+        opacity: 0;
+        transform: scale(1.1);
+      }
+    }
+
+    .logo {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-size: 24px;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+  <div class="logo">🛡️ PhishShield TR</div>
+
+  <div class="warning-container" id="warning-container">
+    <div class="shield-icon">🛡️</div>
+
+    <h1>Tehlikeli Site Tespit Edildi!</h1>
+
+    <div class="danger-badge">⚠️ PHISHING RİSKİ</div>
+
+    <div class="domain-box">
+      <div class="domain-label">Tehlikeli Site:</div>
+      <div class="domain-name" id="danger-domain">-</div>
+    </div>
+
+    <div class="reasons">
+      <h3>🔍 Tespit Nedenleri:</h3>
+      <ul id="reasons-list">
+        <li>Phishing site olarak tespit edildi</li>
+      </ul>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-danger" id="btn-leave">
+        🚫 Hemen Ayrıl
+      </button>
+      <button class="btn btn-secondary" id="btn-stay">
+        ⚠️ Sitede Kal (Tehlikeli)
+      </button>
+    </div>
+
+    <div class="countdown" id="countdown-box" style="display: none;">
+      <span id="countdown">5</span> saniye içinde güvenli sayfaya yönlendirileceksiniz...
+    </div>
+  </div>
+
+  <script>
+    // URL parametrelerini al
+    const params = new URLSearchParams(window.location.search);
+    const domain = params.get('domain') || 'Bilinmeyen site';
+    const reasons = params.get('reasons')?.split(',') || ['Phishing site olarak tespit edildi'];
+    const score = params.get('score') || '100';
+
+    // Bilgileri göster
+    document.getElementById('danger-domain').textContent = domain;
+
+    const reasonsList = document.getElementById('reasons-list');
+    reasonsList.innerHTML = reasons.map(r => `<li>${decodeURIComponent(r)}</li>`).join('');
+
+    // Ayrıl butonu - animasyonlu çıkış
+    document.getElementById('btn-leave').addEventListener('click', () => {
+      const container = document.getElementById('warning-container');
+      container.classList.add('fade-out');
+
+      // chrome.tabs API'si için mesaj gönder
+      chrome.runtime.sendMessage({ type: 'CLOSE_DANGEROUS_TAB' });
+
+      setTimeout(() => {
+        // Yeni sekmede aç veya mevcut sekmeyi kapat
+        window.location.href = 'https://www.google.com';
+      }, 500);
+    });
+
+    // Kal butonu
+    document.getElementById('btn-stay').addEventListener('click', () => {
+      // Kullanıcı riskli siteye devam etmek istiyor
+      const container = document.getElementById('warning-container');
+      container.classList.add('fade-out');
+
+      setTimeout(() => {
+        window.close();
+      }, 500);
+    });
+
+    // Otomatik yönlendirme (5 saniye sonra)
+    let countdown = 5;
+    const countdownBox = document.getElementById('countdown-box');
+    const countdownSpan = document.getElementById('countdown');
+
+    // Yalnızca yüksek risk durumunda otomatik yönlendir
+    if (parseInt(score) >= 90) {
+      countdownBox.style.display = 'block';
+
+      const countdownInterval = setInterval(() => {
+        countdown--;
+        countdownSpan.textContent = countdown;
+
+        if (countdown <= 0) {
+          clearInterval(countdownInterval);
+          const container = document.getElementById('warning-container');
+          container.classList.add('fade-out');
+
+          setTimeout(() => {
+            window.location.href = 'https://www.google.com';
+          }, 500);
+        }
+      }, 1000);
+    }
+
+    // ESC tuşu ile kapat
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.getElementById('btn-leave').click();
+      }
+    });
+  </script>
+</body>
+</html>

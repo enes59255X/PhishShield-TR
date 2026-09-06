@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  # PhishShield Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: phishshield_backend
+    ports:
+      - "8004:8004"
+    environment:
+      - DATABASE_URL=postgresql://phishshield:phishshield_secret@postgres:5432/phishshield
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    networks:
+      - phishshield_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: phishshield_postgres
+    environment:
+      - POSTGRES_USER=phishshield
+      - POSTGRES_PASSWORD=phishshield_secret
+      - POSTGRES_DB=phishshield
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - phishshield_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U phishshield"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: phishshield_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - phishshield_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Worker for background tasks
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.worker
+    container_name: phishshield_worker
+    environment:
+      - DATABASE_URL=postgresql://phishshield:phishshield_secret@postgres:5432/phishshield
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    networks:
+      - phishshield_network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: phishshield_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - phishshield_network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  phishshield_network:
+    driver: bridge

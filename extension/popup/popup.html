@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishShield TR</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <span class="logo-icon">🛡️</span>
+        <span class="logo-text">PhishShield TR</span>
+      </div>
+      <label class="toggle" id="main-toggle">
+        <input type="checkbox" id="protection-toggle" checked>
+        <span class="slider"></span>
+      </label>
+    </header>
+
+    <!-- Loading State -->
+    <div id="loading-state" class="state hidden">
+      <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">Analiz ediliyor...</p>
+      </div>
+    </div>
+
+    <!-- Safe State -->
+    <div id="safe-state" class="state hidden">
+      <div class="status-icon safe">✓</div>
+      <div class="status-badge safe">GÜVENLİ</div>
+      <div class="domain" id="safe-domain">-</div>
+      <div class="confidence">
+        <span class="label">Guven:</span>
+        <span class="value" id="safe-confidence">-</span>
+      </div>
+      <div class="reasons" id="safe-reasons"></div>
+    </div>
+
+    <!-- Danger State -->
+    <div id="danger-state" class="state hidden">
+      <div class="status-icon danger">⚠</div>
+      <div class="status-badge danger">TEHLİKELİ</div>
+      <div class="domain" id="danger-domain">-</div>
+      <div class="risk-score">
+        <span class="label">Risk:</span>
+        <span class="value high" id="danger-score">-</span>
+      </div>
+      <div class="reasons danger" id="danger-reasons"></div>
+      <div class="actions">
+        <button id="btn-block-site" class="btn btn-danger">🚫 Siteyi Kapat</button>
+      </div>
+    </div>
+
+    <!-- Review State -->
+    <div id="review-state" class="state hidden">
+      <div class="status-icon review">!</div>
+      <div class="status-badge review">İNCELENMELİ</div>
+      <div class="domain" id="review-domain">-</div>
+      <div class="risk-score">
+        <span class="label">Risk:</span>
+        <span class="value medium" id="review-score">-</span>
+      </div>
+      <p class="info-text">Bu site dikkatli kullanilmalidir.</p>
+    </div>
+
+    <!-- Unknown State -->
+    <div id="unknown-state" class="state hidden">
+      <div class="status-icon unknown">?</div>
+      <div class="status-badge unknown">BİLİNMEYEN</div>
+      <p class="info-text">Bu site hakkinda yeterli bilgi yok.</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-state" class="state hidden">
+      <div class="status-icon error">⚠</div>
+      <div class="status-badge error">HATA</div>
+      <p id="error-message" class="info-text">Bilinmeyen hata olustu.</p>
+      <button id="btn-retry" class="btn btn-secondary">↻ Tekrar Dene</button>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="stats">
+        <span>Bugun: <strong id="today-count">0</strong> analiz</span>
+      </div>
+      <div class="links">
+        <a href="#" id="link-feedback">Geri Bildirim</a>
+        <a href="#" id="link-settings">Ayarlar</a>
+      </div>
+    </footer>
+
+    <!-- Feedback Modal -->
+    <div id="feedback-modal" class="modal hidden">
+      <div class="modal-content">
+        <h3>📝 Geri Bildirim</h3>
+        <p id="feedback-url">URL: -</p>
+        <div class="feedback-buttons">
+          <button class="btn btn-success" data-feedback="correct">✓ Dogru Tespit</button>
+          <button class="btn btn-danger" data-feedback="false_positive">✗ Yanlis Pozitif</button>
+          <button class="btn btn-warning" data-feedback="false_negative">⚠ Yanlis Negatif</button>
+        </div>
+        <textarea id="feedback-note" placeholder="Notunuz (opsiyonel)" rows="3"></textarea>
+        <div class="modal-actions">
+          <button id="btn-submit-feedback" class="btn btn-primary">Gonder</button>
+          <button id="btn-close-feedback" class="btn btn-secondary">Iptal</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal hidden">
+      <div class="modal-content settings-modal">
+        <h3>⚙️ Ayarlar</h3>
+        
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-label">🛡️ Koruma</span>
+            <span class="setting-desc">Phishing korumasi aktif/pasif</span>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="setting-protection" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-label">📝 Form Korumasi</span>
+            <span class="setting-desc">Sahsi bilgi korumasi</span>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="setting-form-protection" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-label">🔍 Otomatik Tarama</span>
+            <span class="setting-desc">Ziyaret edilen siteleri otomatik tara</span>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="setting-auto-scan" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-label">📊 Gelismis Mod</span>
+            <span class="setting-desc">Detayli analiz sonuclari goster</span>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="setting-advanced-mode">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 20px;">
+          <button id="btn-close-settings" class="btn btn-primary" style="flex: 1;">Tamam</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,529 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "PhishShield TR API",
+    "description": "Gerçek zamanlı phishing koruma API'si - Türkiye'nin en kapsamlı phishing tespit sistemi",
+    "version": "2.0.0",
+    "contact": {
+      "name": "PhishShield TR Team",
+      "url": "https://phishshield.tr"
+    },
+    "license": {
+      "name": "MIT License"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8004",
+      "description": "Development Server"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "API Durumu",
+        "description": "API'nın çalışır durumda olup olmadığını kontrol eder",
+        "operationId": "get_status",
+        "responses": {
+          "200": {
+            "description": "API çalışıyor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {"type": "string", "example": "online"},
+                    "version": {"type": "string", "example": "2.0.0"},
+                    "timestamp": {"type": "string", "format": "date-time"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Sağlık Kontrolü",
+        "description": "Sistem sağlık durumunu kontrol eder",
+        "operationId": "health_check",
+        "responses": {
+          "200": {
+            "description": "Sistem sağlıklı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {"type": "string", "example": "healthy"},
+                    "components": {
+                      "type": "object",
+                      "properties": {
+                        "threat_db": {"type": "string"},
+                        "ml_model": {"type": "string"},
+                        "cache": {"type": "string"}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/check": {
+      "post": {
+        "summary": "URL Analizi",
+        "description": "Bir URL'nin phishing olup olmadığını analiz eder",
+        "operationId": "analyze_url",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UrlCheckRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Analiz sonucu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UrlCheckResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit aşıldı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/batch": {
+      "post": {
+        "summary": "Toplu URL Analizi",
+        "description": "Birden fazla URL'yi aynı anda analiz eder",
+        "operationId": "batch_check",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchCheckRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Toplu analiz sonuçları",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchCheckResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/explain": {
+      "post": {
+        "summary": "Detaylı Açıklama",
+        "description": "Bir analiz sonucunun detaylı açıklamasını döndürür",
+        "operationId": "explain_result",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExplainRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Detaylı açıklama",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExplainResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/stats": {
+      "get": {
+        "summary": "İstatistikler",
+        "description": "Sistem istatistiklerini döndürür",
+        "operationId": "get_stats",
+        "responses": {
+          "200": {
+            "description": "Sistem istatistikleri",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/feedback": {
+      "post": {
+        "summary": "Geri Bildirim",
+        "description": "Bir analiz sonucu için geri bildirim gönderir",
+        "operationId": "submit_feedback",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Geri bildirim kaydedildi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/intel/domain/{domain}": {
+      "get": {
+        "summary": "Domain Zeka",
+        "description": "Bir domain hakkında detaylı bilgi getirir",
+        "operationId": "get_domain_intel",
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Analiz edilecek domain"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Domain bilgisi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainIntelResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "UrlCheckRequest": {
+        "type": "object",
+        "required": ["url"],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://garanti-login-secure.xyz.com",
+            "description": "Analiz edilecek URL"
+          },
+          "check_type": {
+            "type": "string",
+            "enum": ["quick", "full"],
+            "default": "full",
+            "description": "Analiz derinliği"
+          }
+        }
+      },
+      "UrlCheckResponse": {
+        "type": "object",
+        "properties": {
+          "url": {"type": "string"},
+          "domain": {"type": "string"},
+          "decision": {
+            "type": "string",
+            "enum": ["PHISHING", "SAFE", "SUSPICIOUS"],
+            "example": "PHISHING"
+          },
+          "risk_score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 85
+          },
+          "confidence": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 95
+          },
+          "components": {
+            "type": "object",
+            "properties": {
+              "threat": {"type": "integer"},
+              "brand": {"type": "integer"},
+              "form": {"type": "integer"},
+              "domain": {"type": "integer"},
+              "content": {"type": "integer"}
+            }
+          },
+          "ml_confidence": {"type": "number"},
+          "ml_probability": {"type": "number"},
+          "threat_match": {"type": "boolean"},
+          "threat_sources": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "signals": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "signal": {"type": "string"},
+                "severity": {"type": "string"}
+              }
+            }
+          },
+          "recommendations": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "analysis_time_ms": {"type": "integer"},
+          "timestamp": {"type": "string", "format": "date-time"}
+        }
+      },
+      "BatchCheckRequest": {
+        "type": "object",
+        "required": ["urls"],
+        "properties": {
+          "urls": {
+            "type": "array",
+            "items": {"type": "string", "format": "uri"},
+            "maxItems": 100,
+            "example": ["https://google.com", "https://garanti-login.xyz"]
+          }
+        }
+      },
+      "BatchCheckResponse": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/UrlCheckResponse"}
+          },
+          "summary": {
+            "type": "object",
+            "properties": {
+              "total": {"type": "integer"},
+              "phishing": {"type": "integer"},
+              "safe": {"type": "integer"},
+              "suspicious": {"type": "integer"}
+            }
+          },
+          "analysis_time_ms": {"type": "integer"}
+        }
+      },
+      "ExplainRequest": {
+        "type": "object",
+        "required": ["url", "risk_score"],
+        "properties": {
+          "url": {"type": "string"},
+          "risk_score": {"type": "integer"},
+          "decision": {"type": "string"},
+          "components": {
+            "type": "object",
+            "properties": {
+              "threat": {"type": "integer"},
+              "brand": {"type": "integer"},
+              "form": {"type": "integer"},
+              "domain": {"type": "integer"},
+              "content": {"type": "integer"}
+            }
+          }
+        }
+      },
+      "ExplainResponse": {
+        "type": "object",
+        "properties": {
+          "url": {"type": "string"},
+          "headline": {"type": "string"},
+          "summary": {"type": "string"},
+          "risk_level": {"type": "string"},
+          "red_flags": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "component_explanations": {
+            "type": "object",
+            "properties": {
+              "threat_intel": {"type": "string"},
+              "brand": {"type": "string"},
+              "form": {"type": "string"},
+              "domain": {"type": "string"},
+              "content": {"type": "string"}
+            }
+          },
+          "advice": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "breakdown": {
+            "type": "object",
+            "properties": {
+              "final_score": {"type": "integer"},
+              "fusion_score": {"type": "integer"},
+              "ml_probability": {"type": "string"},
+              "fusion_weight": {"type": "string"},
+              "ml_weight": {"type": "string"}
+            }
+          }
+        }
+      },
+      "StatsResponse": {
+        "type": "object",
+        "properties": {
+          "total_requests": {"type": "integer"},
+          "phishing_detected": {"type": "integer"},
+          "safe_verified": {"type": "integer"},
+          "uptime_seconds": {"type": "integer"},
+          "threat_db_size": {"type": "integer"},
+          "ml_model_version": {"type": "string"},
+          "cache_hit_rate": {"type": "number"},
+          "avg_response_time_ms": {"type": "number"}
+        }
+      },
+      "FeedbackRequest": {
+        "type": "object",
+        "required": ["url", "feedback_type"],
+        "properties": {
+          "url": {"type": "string"},
+          "original_decision": {"type": "string"},
+          "original_score": {"type": "integer"},
+          "feedback_type": {
+            "type": "string",
+            "enum": ["false_positive", "false_negative", "correct"],
+            "example": "false_positive"
+          },
+          "correct_label": {
+            "type": "string",
+            "enum": ["phishing", "safe"]
+          },
+          "message": {"type": "string"}
+        }
+      },
+      "DomainIntelResponse": {
+        "type": "object",
+        "properties": {
+          "domain": {"type": "string"},
+          "registrar": {"type": "string"},
+          "registration_date": {"type": "string"},
+          "expiration_date": {"type": "string"},
+          "age_days": {"type": "integer"},
+          "age_category": {"type": "string"},
+          "ssl_info": {
+            "type": "object",
+            "properties": {
+              "has_ssl": {"type": "boolean"},
+              "issuer": {"type": "string"},
+              "valid_from": {"type": "string"},
+              "valid_until": {"type": "string"}
+            }
+          },
+          "dns_records": {
+            "type": "object",
+            "properties": {
+              "A": {"type": "array", "items": {"type": "string"}},
+              "MX": {"type": "array", "items": {"type": "string"}},
+              "NS": {"type": "array", "items": {"type": "string"}}
+            }
+          },
+          "threat_intel": {
+            "type": "object",
+            "properties": {
+              "is_typosquat": {"type": "boolean"},
+              "similar_domains": {"type": "array", "items": {"type": "string"}},
+              "threat_match": {"type": "boolean"},
+              "threat_sources": {"type": "array", "items": {"type": "string"}}
+            }
+          },
+          "risk_factors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "factor": {"type": "string"},
+                "risk_level": {"type": "integer"},
+                "description": {"type": "string"}
+              }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "Rate limit exceeded"
+          },
+          "code": {
+            "type": "string",
+            "example": "RATE_LIMIT_EXCEEDED"
+          },
+          "retry_after": {"type": "integer"}
+        }
+      },
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": {"type": "boolean"},
+          "message": {"type": "string"},
+          "id": {"type": "string"}
+        }
+      }
+    },
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API anahtarınız"
+      }
+    }
+  },
+  "security": [
+    {"ApiKeyAuth": []}
+  ]
+}
